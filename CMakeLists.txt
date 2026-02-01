@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(raylib-cpp-template VERSION 0.0.1 LANGUAGES CXX)
+project(nand2tetris VERSION 0.0.1 LANGUAGES CXX)
 
 set(EXE_NAME main)
 
@@ -36,4 +36,6 @@ target_link_libraries(${EXE_NAME} nfd)
 target_link_libraries(${EXE_NAME} tomlplusplus::tomlplusplus)
 
 target_include_directories(${EXE_NAME} PUBLIC external/rlimgui)
+
+set_target_properties(${EXE_NAME} PROPERTIES OUTPUT_NAME nand2tetris)
 
