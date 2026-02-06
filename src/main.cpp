@@ -39,7 +39,6 @@ auto main(int argc, char *argv[]) -> int {
     return 1;
   }
 
-
   spdlog::info("Exiting.");
 
   return 0;
