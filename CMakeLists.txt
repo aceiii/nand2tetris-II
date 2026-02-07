@@ -12,6 +12,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_compile_definitions(TOML_EXCEPTIONS=0)
 
 set(SOURCE_FILES
+        src/args.h
+        src/args.cpp
         src/main.cpp
         src/hdl/hdl_parser.h
         src/hdl/hdl_parser.cpp

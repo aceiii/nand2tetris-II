@@ -27,9 +27,13 @@ std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
   in_ = { "a", "b", "c" };
   out_ = { "out", "x", "y" };
   parts_ = {
-    Part {
+    {
       .name = "AND",
       .bindings = {{ "a", "b" }, { "x", "y" }, { "u", "v" }},
+    },
+    {
+      .name = "XOR",
+      .bindings = {{ "x", "b" }, { "a", "y" }, { "out", "out" }},
     },
   };
 
