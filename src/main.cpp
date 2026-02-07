@@ -14,7 +14,7 @@ static bool set_logging_level(const std::string &level_name) {
 auto main(int argc, char *argv[]) -> int {
   spdlog::set_level(spdlog::level::info);
 
-  argparse::ArgumentParser program("aceboy", "0.0.1");
+  argparse::ArgumentParser program("nand2tetris", "0.0.1");
 
   program.add_argument("--log-level")
       .help("Set the verbosity for logging")
