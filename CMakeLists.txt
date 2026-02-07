@@ -5,13 +5,16 @@ project(nand2tetris VERSION 0.0.1 LANGUAGES CXX)
 set(EXE_NAME main)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_compile_definitions(TOML_EXCEPTIONS=0)
 
 set(SOURCE_FILES
-    src/main.cpp
+        src/main.cpp
+        src/hdl/hdl_parser.h
+        src/hdl/hdl_parser.cpp
 )
 
 set(ARGPARSE_BUILD_TESTS OFF)
