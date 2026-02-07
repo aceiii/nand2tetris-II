@@ -29,11 +29,19 @@ std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
   parts_ = {
     {
       .name = "AND",
-      .bindings = {{ "a", "b" }, { "x", "y" }, { "u", "v" }},
+      .bindings = {{{ "a" }, { "b" }}, {{ "x" }, { "y" }}, {{ "u" }, { "v" }}},
     },
     {
       .name = "XOR",
-      .bindings = {{ "x", "b" }, { "a", "y" }, { "out", "out" }},
+      .bindings = {{{ "x" }, { "b" }}, {{ "a" }, { "y" }}, { "out" }, { "out" }},
+    },
+    {
+      .name = "Mux16",
+      .bindings = {{{ "a" }, { "c" }}, {{ "b" }, { "d" }}, {{ "sel" }, { "sel", 0, 1 }}, {{ "out" }, { "cd" }}},
+    },
+    {
+      .name = "Or16",
+      .bindings = {{{ "a" }, { "result" }},{{ "b" }, { "false" }}, {{ "out", 0, 8 }, { "zrlo" }}, {{ "out", 8, 16 }, { "zrhi" }}},
     },
   };
 

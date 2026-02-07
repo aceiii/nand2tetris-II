@@ -38,14 +38,28 @@ auto main(int argc, char *argv[]) -> int {
     return ss.str();
   };
 
-  auto port_bindings = [](const std::vector<hdl::PortBinding>& bindings) -> std::string {
+  auto port_bus = [](const hdl::Bus& bus) -> std::string {
+    std::stringstream ss;
+    ss << bus.name;
+
+    size_t width = bus.Width();
+    if (width == 1) {
+      ss << "[" << bus.start << "]";
+    } else if (width > 1) {
+      ss << "[" << bus.start <<  ".." << (bus.end-1) << "]";
+    }
+
+    return ss.str();
+  };
+
+  auto port_bindings = [&](const std::vector<hdl::PortBinding>& bindings) -> std::string {
     std::stringstream ss;
     int idx = 0;
     for (const auto& binding: bindings) {
       if (idx > 0) {
         ss << ", ";
       }
-      ss << binding.input << "=" << binding.output;
+      ss << port_bus(binding.left) << "=" << port_bus(binding.right);
       idx += 1;
     }
     return ss.str();
@@ -55,7 +69,7 @@ auto main(int argc, char *argv[]) -> int {
   spdlog::info("| OUT: {}", port_names(parser.OutPorts()));
   spdlog::info("| PARTS:");
   for (const auto& part: parser.Parts()) {
-    spdlog::info("|   {} ({})", part.name, port_bindings(part.bindings));
+    spdlog::info("|   {}({})", part.name, port_bindings(part.bindings));
   }
 
   spdlog::info("Exiting.");

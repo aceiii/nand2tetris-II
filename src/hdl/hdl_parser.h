@@ -6,9 +6,23 @@
 #include <string_view>
 
 namespace hdl {
+  struct Bus {
+    std::string name;
+    size_t start;
+    size_t end;
+
+    size_t Width() const {
+      const int width = end - start;
+      if (width < 1) {
+        return 0;
+      }
+      return width;
+    }
+  };
+
   struct PortBinding {
-    std::string input;
-    std::string output;
+    Bus left;
+    Bus right;
   };
 
   struct Part {
