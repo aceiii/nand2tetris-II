@@ -24,8 +24,8 @@ std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
 
   // TODO:
   name_ = "FOO";
-  in_ = { "a", "b", "c" };
-  out_ = { "out", "x", "y" };
+  in_ = {{ "a", 1 }, { "b", 1 }, { "c", 1 }};
+  out_ = {{ "out", 16 }, { "x", 1 }, { "y", 1 }};
   parts_ = {
     {
       .name = "AND",
@@ -44,11 +44,11 @@ const std::string & hdl::Parser::Name() const {
   return name_;
 }
 
-const std::vector<std::string> & hdl::Parser::InPorts() const {
+const std::vector<hdl::Port> & hdl::Parser::InPorts() const {
   return in_;
 }
 
-const std::vector<std::string> & hdl::Parser::OutPorts() const {
+const std::vector<hdl::Port> & hdl::Parser::OutPorts() const {
   return out_;
 }
 

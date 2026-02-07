@@ -16,18 +16,23 @@ namespace hdl {
     std::vector<PortBinding> bindings;
   };
 
+  struct Port {
+    std::string name;
+    size_t width;
+  };
+
   class Parser {
   public:
     std::expected<void, std::string> Parse(std::string_view filename);
     const std::string& Name() const;
-    const std::vector<std::string>& InPorts() const;
-    const std::vector<std::string>& OutPorts() const;
+    const std::vector<Port>& InPorts() const;
+    const std::vector<Port>& OutPorts() const;
     const std::vector<Part>& Parts() const;
 
   private:
     std::string name_;
-    std::vector<std::string> in_;
-    std::vector<std::string> out_;
+    std::vector<Port> in_;
+    std::vector<Port> out_;
     std::vector<Part> parts_;
   };
 }

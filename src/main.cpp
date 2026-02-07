@@ -21,14 +21,18 @@ auto main(int argc, char *argv[]) -> int {
 
   spdlog::info("Loaded HDL module: {}", parser.Name());
 
-  auto port_names = [](const std::vector<std::string>& v) -> std::string {
+  auto port_names = [](const std::vector<hdl::Port>& ports) -> std::string {
     std::stringstream ss;
     int idx = 0;
-    for (const auto& s: v) {
+    for (const auto& port: ports) {
       if (idx > 0) {
         ss << ", ";
       }
-      ss << s;
+      if (port.width > 1) {
+        ss << port.name << "[" << port.width << "]";
+      } else {
+        ss << port.name;
+      }
       idx += 1;
     }
     return ss.str();
