@@ -3,6 +3,7 @@
 
 #include "args.h"
 #include "hdl/hdl_parser.h"
+#include "util/string.h"
 
 
 auto main(int argc, char *argv[]) -> int {
@@ -22,47 +23,29 @@ auto main(int argc, char *argv[]) -> int {
   spdlog::info("Loaded HDL module: {}", parser.Name());
 
   auto port_names = [](const std::vector<hdl::Port>& ports) -> std::string {
-    std::stringstream ss;
-    int idx = 0;
-    for (const auto& port: ports) {
-      if (idx > 0) {
-        ss << ", ";
-      }
+    return util::StrJoin(ports, ", ", [](const hdl::Port& port) {
       if (port.width > 1) {
-        ss << port.name << "[" << port.width << "]";
-      } else {
-        ss << port.name;
+        return std::format("{}[{}]", port.name, port.width);
       }
-      idx += 1;
-    }
-    return ss.str();
+      return port.name;
+    });
   };
 
   auto port_bus = [](const hdl::Bus& bus) -> std::string {
-    std::stringstream ss;
-    ss << bus.name;
-
     size_t width = bus.Width();
     if (width == 1) {
-      ss << "[" << bus.start << "]";
-    } else if (width > 1) {
-      ss << "[" << bus.start <<  ".." << (bus.end-1) << "]";
+      return std::format("{}[{}]", bus.name, bus.start);
     }
-
-    return ss.str();
+    if (width > 1) {
+      return std::format("{}[{}..{}]", bus.name, bus.start, bus.end - 1);
+    }
+    return bus.name;
   };
 
   auto port_bindings = [&](const std::vector<hdl::PortBinding>& bindings) -> std::string {
-    std::stringstream ss;
-    int idx = 0;
-    for (const auto& binding: bindings) {
-      if (idx > 0) {
-        ss << ", ";
-      }
-      ss << port_bus(binding.left) << "=" << port_bus(binding.right);
-      idx += 1;
-    }
-    return ss.str();
+    return util::StrJoin(bindings, ", ", [&](const hdl::PortBinding& binding) {
+      return std::format("{}={}", port_bus(binding.left), port_bus(binding.right));
+    });
   };
 
   spdlog::info("| IN: {}", port_names(parser.InPorts()));

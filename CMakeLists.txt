@@ -17,6 +17,8 @@ set(SOURCE_FILES
         src/main.cpp
         src/hdl/hdl_parser.h
         src/hdl/hdl_parser.cpp
+        src/util/string.h
+        src/util/string.cpp
 )
 
 set(ARGPARSE_BUILD_TESTS OFF)
