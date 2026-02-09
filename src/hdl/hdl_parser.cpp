@@ -5,6 +5,517 @@
 
 namespace fs = std::filesystem;
 
+namespace hdl::internal {
+  template <typename T = void>
+  using ParseResult = std::expected<T, std::string>;
+
+  struct Chip {
+    std::string name;
+    std::vector<::hdl::Port> in;
+    std::vector<::hdl::Port> out;
+    std::vector<::hdl::Part> parts;
+  };
+
+  struct InnerParser {
+    std::string_view buffer;
+    int idx = 0;
+
+    auto Current() const -> char {
+      return buffer[idx];
+    }
+
+    auto Next() -> void {
+      idx++;
+    }
+
+    auto Peek(unsigned int n = 0) const -> char {
+      if (idx >= buffer.size()) {
+        return 0;
+      }
+      return buffer[idx + n + 1];
+    }
+
+    auto SkipWhitespace() -> void {
+      while (IsWhitespace(Current())) {
+        Next();
+      }
+    }
+
+    auto SkipIgnorable() -> ParseResult<> {
+      if (auto res = SkipComments(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+      SkipWhitespace();
+      return {};
+    }
+
+    auto SkipComments() -> ParseResult<> {
+      while (Current() == '/') {
+        Next();
+        if (Current() == '*') {
+          do {
+            Next();
+          } while (!(Current() == '*' && Peek() == '/'));
+          Next();
+          if (auto res = Expect('/'); !res.has_value()) {
+            return std::unexpected{res.error()};
+          }
+        }
+        else if (Current() == '/') {
+          do {
+            Next();
+          } while (Current() != '\0' && Current() != '\n');
+        }
+
+        SkipWhitespace();
+      }
+      return {};
+    }
+
+    auto Expect(char expected) -> ParseResult<> {
+      auto c = Current();
+      if (c != expected) {
+        return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
+      }
+      Next();
+      return {};
+    }
+
+    auto ExpectStr(std::string_view sv) -> ParseResult<> {
+      for (auto c : sv) {
+        if (auto res = Expect(c); !res.has_value()) {
+          return res;
+        }
+      }
+      return {};
+    }
+
+    auto ExpectOneOf(std::string_view sv) -> ParseResult<> {
+      bool found = false;
+      auto curr = Current();
+      for (auto c : sv) {
+        if (c == curr) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return std::unexpected{std::format("Unexpected one of: {}", sv)};
+      }
+      return {};
+    }
+
+    auto Digit() -> ParseResult<int> {
+      auto c = Current();
+      if (c < '0' || c > '9') {
+        return std::unexpected{std::format("Unexpected character '{}'", c)};
+      }
+      return c - '0';
+    }
+
+    auto StartDigit() -> ParseResult<int> {
+      auto c = Current();
+      if (c < '0' || c > '9') {
+        return std::unexpected{std::format("Unexpected character '{}'", c)};
+      }
+      return c - '0';
+    }
+
+    auto Whitespace() -> ParseResult<> {
+      auto c = Current();
+      if (!IsWhitespace(c)) {
+        return std::unexpected(std::format("Unexpected character '{}'", c));
+      }
+      return {};
+    }
+
+    auto Number() -> ParseResult<int> {
+      auto c = Current();
+      if (c == '0') {
+        if (IsAlphaNumeric(Peek())) {
+          return std::unexpected{std::format("Unexpected '{}'", Peek())};
+        }
+        return 0;
+      }
+
+      if (!isalpha(c)) {
+        return std::unexpected{std::format("Unexpected '{}'", Peek())};
+      }
+
+      int number = c - '0';
+      c = Peek();
+      while (IsAlphaNumeric(c)) {
+        if (isalpha(c)) {
+          number = (number * 10) + (c - '0');
+        } else {
+          return std::unexpected{std::format("Unexpected '{}'", Peek())};
+        }
+        Next();
+        c = Peek();
+      }
+
+      return number;
+    };
+
+    auto IsAlphaNumeric(char c) -> bool {
+      return isalpha(c) || isdigit(c);
+    }
+
+    auto IdentChar() -> ParseResult<char> {
+      auto c = Current();
+      if (!IsAlphaNumeric(c)) {
+        return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
+      }
+      Next();
+      return c;
+    }
+
+    auto IdentStart() -> ParseResult<char> {
+      auto c = Current();
+      if (!isalpha(c)) {
+        return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
+      }
+      Next();
+      return c;
+    }
+
+    auto IsWhitespace(char c) -> bool {
+      switch (c) {
+        case ' ':
+        case '\t':
+        case '\n':
+        case '\r':
+          return true;
+        default: return false;
+      }
+    }
+
+    auto Ident() -> ParseResult<std::string> {
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      std::stringstream ss;
+      auto res = IdentStart();
+      if (!res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+      ss << res.value();
+
+      while (IsAlphaNumeric(Current())) {
+        res = IdentChar();
+        ss << res.value();
+      }
+      return ss.str();
+    }
+
+    auto Port() -> ParseResult<::hdl::Port> {
+      auto ident = Ident();
+      if (!ident.has_value()) {
+        return std::unexpected{std::format("Expecting identifier, {}", ident.error())};
+      }
+
+      if (Peek() != '[') {
+        return ::hdl::Port{
+          .name = ident.value(),
+        };
+      }
+
+      auto num = Number();
+      if (!num.has_value()) {
+        return std::unexpected{num.error()};
+      }
+
+      if (auto res = Expect(']'); !res.has_value()) {
+        return std::unexpected{std::format("Expecting ']', {}", res.error())};
+      }
+
+      return ::hdl::Port{
+        .name = ident.value(),
+        .width = static_cast<size_t>(num.value()),
+      };
+    }
+
+    auto Ports() -> ParseResult<std::vector<::hdl::Port>> {
+      std::vector<::hdl::Port> ports;
+      do {
+        auto port = Port();
+        if (!port.has_value()) {
+          return std::unexpected{port.error()};
+        }
+        ports.push_back(port.value());
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
+
+        if (Current() != ',') {
+          break;
+        }
+
+        Next();
+      } while (true);
+
+      return ports;
+    }
+
+    auto Bus() -> ParseResult<::hdl::Bus> {
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      int current_idx = idx;
+      auto port = Port();
+      if (port.has_value()) {
+        return ::hdl::Bus{
+          .name = port.value().name,
+          .start = port.value().width,
+          .end = port.value().width + 1,
+        };
+      }
+
+      idx = current_idx;
+
+      auto ident = Ident();
+      if ( !ident.has_value()) {
+        return std::unexpected{ident.error()};
+      }
+
+      if (auto res = Expect('['); !res.has_value()) {
+        return std::unexpected{std::format("Expecting '[', {}", res.error())};
+      }
+
+      auto num1 = Number();
+      if (!num1.has_value()) {
+        return std::unexpected{num1.error()};
+      }
+
+      if (auto res = ExpectStr(".."); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto num2 = Number();
+      if (!num2.has_value()) {
+        return std::unexpected{num2.error()};
+      }
+
+      if (auto res = Expect(']'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      return ::hdl::Bus{
+        .name = ident.value(),
+        .start = static_cast<size_t>(num1.value()),
+        .end = static_cast<size_t>(num2.value()),
+      };
+    }
+
+    auto Binding() -> ParseResult<::hdl::PortBinding> {
+      auto left = Bus();
+      if (!left.has_value()) {
+        return std::unexpected{left.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect('='); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto right = Bus();
+      if (!right.has_value()) {
+        return std::unexpected{right.error()};
+      }
+
+      return ::hdl::PortBinding{
+        .left = left.value(),
+        .right = right.value(),
+      };
+    }
+
+    auto Bindings() -> ParseResult<std::vector<::hdl::PortBinding>> {
+      std::vector<::hdl::PortBinding> port_bindings;
+      do {
+        auto binding = Binding();
+        if (!binding.has_value()) {
+          return std::unexpected{binding.error()};
+        }
+        port_bindings.push_back(binding.value());
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
+
+        if (Current() != ',') {
+          break;
+        }
+
+        Next();
+      } while (true);
+      return port_bindings;
+    }
+
+    auto Part() -> ParseResult<::hdl::Part> {
+      auto ident = Ident();
+      if (!ident.has_value()) {
+        return std::unexpected{ident.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect('('); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto bindings = Bindings();
+      if (!bindings.has_value()) {
+        return std::unexpected{bindings.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect(')'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      return ::hdl::Part{
+        .name = ident.value(),
+        .bindings = bindings.value(),
+      };
+    }
+
+    auto Parts() -> ParseResult<std::vector<::hdl::Part>> {
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = ExpectStr("PARTS"); !res.has_value()) {
+        return std::unexpected{std::format("Expecting keyword PARTS, {}", res.error())};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect(':'); !res.has_value()) {
+        return std::unexpected(res.error());
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      std::vector<::hdl::Part> parts;
+      do {
+        auto part = Part();
+        if (!part.has_value()) {
+          return std::unexpected{part.error()};
+        }
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
+
+        if (auto res = Expect(';'); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
+
+        parts.push_back(part.value());
+      } while (Current() != '}');
+
+      return parts;
+    }
+
+    auto PortSection (std::string_view section) -> ParseResult<std::vector<::hdl::Port>> {
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = ExpectStr(section); !res.has_value()) {
+        return std::unexpected{std::format("Expecting keyword {}. {}", section, res.error())};
+      }
+
+      auto ports = Ports();
+      if (!ports.has_value()) {
+        return std::unexpected{ports.error()};
+      }
+
+      if (auto res = Expect(';'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      return ports.value();
+    }
+
+    auto Chip () -> ParseResult<Chip> {
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = ExpectStr("CHIP"); !res.has_value()) {
+        return std::unexpected{std::format("Expecting keyword CHIP, {}", res.error())};
+      }
+
+      auto ident = Ident();
+      if (!ident.has_value()) {
+        return std::unexpected{ident.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect('{'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto in_section = PortSection("IN");
+      if (!in_section.has_value()) {
+        return std::unexpected{in_section.error()};
+      }
+
+      auto out_section = PortSection("OUT");
+      if (!out_section.has_value()) {
+        return std::unexpected{out_section.error()};
+      }
+
+      auto parts = Parts();
+      if (!parts.has_value()) {
+        return std::unexpected{parts.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect('}'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      return ::hdl::internal::Chip{
+        .name = ident.value(),
+        .in = in_section.value(),
+        .out = out_section.value(),
+        .parts = parts.value(),
+      };
+    }
+  };
+}
+
 std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
   fs::path abs_path = fs::absolute(filename);
 
@@ -22,28 +533,20 @@ std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
   file.close();
   spdlog::debug("Read {} bytes", size);
 
-  // TODO:
-  name_ = "FOO";
-  in_ = {{ "a", 1 }, { "b", 1 }, { "c", 1 }};
-  out_ = {{ "out", 16 }, { "x", 1 }, { "y", 1 }};
-  parts_ = {
-    {
-      .name = "AND",
-      .bindings = {{{ "a" }, { "b" }}, {{ "x" }, { "y" }}, {{ "u" }, { "v" }}},
-    },
-    {
-      .name = "XOR",
-      .bindings = {{{ "x" }, { "b" }}, {{ "a" }, { "y" }}, { "out" }, { "out" }},
-    },
-    {
-      .name = "Mux16",
-      .bindings = {{{ "a" }, { "c" }}, {{ "b" }, { "d" }}, {{ "sel" }, { "sel", 0, 1 }}, {{ "out" }, { "cd" }}},
-    },
-    {
-      .name = "Or16",
-      .bindings = {{{ "a" }, { "result" }},{{ "b" }, { "false" }}, {{ "out", 0, 8 }, { "zrlo" }}, {{ "out", 8, 16 }, { "zrhi" }}},
-    },
-  };
+  internal::InnerParser parser;
+  parser.buffer = std::string_view{buffer};
+
+  auto res = parser.Chip();
+  if (!res.has_value()) {
+    return std::unexpected{res.error()};
+  }
+
+  auto chip = res.value();
+
+  name_ = chip.name;
+  in_ = chip.in;
+  out_ = chip.out;
+  parts_ = chip.parts;
 
   return {};
 }
