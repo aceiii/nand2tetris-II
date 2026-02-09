@@ -75,7 +75,7 @@ namespace hdl::internal {
     auto Expect(char expected) -> ParseResult<> {
       auto c = Current();
       if (c != expected) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
+        return std::unexpected{std::format("Unexpected '{}' at index {}, expecting '{}'.", c, idx, expected)};
       }
       Next();
       return {};
@@ -133,29 +133,31 @@ namespace hdl::internal {
       auto c = Current();
       if (c == '0') {
         if (IsAlphaNumeric(Peek())) {
-          return std::unexpected{std::format("Unexpected '{}'", Peek())};
+          return std::unexpected{std::format("Unexpected '{}' at index {}.", Peek(), idx + 1)};
         }
+        Next();
         return 0;
       }
 
-      if (!isalpha(c)) {
-        return std::unexpected{std::format("Unexpected '{}'", Peek())};
+      if (!isdigit(c)) {
+        return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
       }
 
       int number = c - '0';
-      c = Peek();
+      Next();
+      c = Current();
       while (IsAlphaNumeric(c)) {
-        if (isalpha(c)) {
+        if (isdigit(c)) {
           number = (number * 10) + (c - '0');
         } else {
-          return std::unexpected{std::format("Unexpected '{}'", Peek())};
+          return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
         }
         Next();
-        c = Peek();
+        c = Current();
       }
 
       return number;
-    };
+    }
 
     auto IsAlphaNumeric(char c) -> bool {
       return isalpha(c) || isdigit(c);
@@ -215,10 +217,14 @@ namespace hdl::internal {
         return std::unexpected{std::format("Expecting identifier, {}", ident.error())};
       }
 
-      if (Peek() != '[') {
+      if (Current() != '[') {
         return ::hdl::Port{
           .name = ident.value(),
         };
+      }
+
+      if (auto res = Expect('['); !res.has_value()) {
+        return std::unexpected{std::format("Expecting '[', {}", res.error())};
       }
 
       auto num = Number();
@@ -254,6 +260,10 @@ namespace hdl::internal {
         }
 
         Next();
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
       } while (true);
 
       return ports;
@@ -353,6 +363,10 @@ namespace hdl::internal {
         }
 
         Next();
+
+        if (auto res = SkipIgnorable(); !res.has_value()) {
+          return std::unexpected{res.error()};
+        }
       } while (true);
       return port_bindings;
     }
@@ -451,6 +465,10 @@ namespace hdl::internal {
       }
 
       if (auto res = Expect(';'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
         return std::unexpected{res.error()};
       }
 
