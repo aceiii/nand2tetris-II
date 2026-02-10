@@ -24,20 +24,20 @@ namespace hdl::internal {
       return buffer[idx];
     }
 
-    auto Next() -> void {
+    auto Consume() -> void {
       idx++;
     }
 
-    auto Peek(unsigned int n = 0) const -> char {
+    auto Peek() const -> char {
       if (idx >= buffer.size()) {
         return 0;
       }
-      return buffer[idx + n + 1];
+      return buffer[idx + 1];
     }
 
     auto SkipWhitespace() -> void {
       while (IsWhitespace(Current())) {
-        Next();
+        Consume();
       }
     }
 
@@ -51,19 +51,19 @@ namespace hdl::internal {
 
     auto SkipComments() -> ParseResult<> {
       while (Current() == '/') {
-        Next();
+        Consume();
         if (Current() == '*') {
           do {
-            Next();
+            Consume();
           } while (!(Current() == '*' && Peek() == '/'));
-          Next();
+          Consume();
           if (auto res = Expect('/'); !res.has_value()) {
             return std::unexpected{res.error()};
           }
         }
         else if (Current() == '/') {
           do {
-            Next();
+            Consume();
           } while (Current() != '\0' && Current() != '\n');
         }
 
@@ -77,7 +77,7 @@ namespace hdl::internal {
       if (c != expected) {
         return std::unexpected{std::format("Unexpected '{}' at index {}, expecting '{}'.", c, idx, expected)};
       }
-      Next();
+      Consume();
       return {};
     }
 
@@ -135,7 +135,7 @@ namespace hdl::internal {
         if (IsAlphaNumeric(Peek())) {
           return std::unexpected{std::format("Unexpected '{}' at index {}.", Peek(), idx + 1)};
         }
-        Next();
+        Consume();
         return 0;
       }
 
@@ -144,7 +144,7 @@ namespace hdl::internal {
       }
 
       int number = c - '0';
-      Next();
+      Consume();
       c = Current();
       while (IsAlphaNumeric(c)) {
         if (isdigit(c)) {
@@ -152,7 +152,7 @@ namespace hdl::internal {
         } else {
           return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
         }
-        Next();
+        Consume();
         c = Current();
       }
 
@@ -168,7 +168,7 @@ namespace hdl::internal {
       if (!IsAlphaNumeric(c)) {
         return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
       }
-      Next();
+      Consume();
       return c;
     }
 
@@ -177,7 +177,7 @@ namespace hdl::internal {
       if (!isalpha(c)) {
         return std::unexpected{std::format("Unexpected '{}' at index {}.", c, idx)};
       }
-      Next();
+      Consume();
       return c;
     }
 
@@ -259,7 +259,7 @@ namespace hdl::internal {
           break;
         }
 
-        Next();
+        Consume();
 
         if (auto res = SkipIgnorable(); !res.has_value()) {
           return std::unexpected{res.error()};
@@ -274,21 +274,21 @@ namespace hdl::internal {
         return std::unexpected{res.error()};
       }
 
-      int current_idx = idx;
-      auto port = Port();
-      if (port.has_value()) {
-        return ::hdl::Bus{
-          .name = port.value().name,
-          .start = port.value().width,
-          .end = port.value().width + 1,
-        };
-      }
-
-      idx = current_idx;
-
       auto ident = Ident();
       if ( !ident.has_value()) {
         return std::unexpected{ident.error()};
+      }
+
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (Current() != '[') {
+        return ::hdl::Bus{
+          .name = ident.value(),
+          .start = 0,
+          .end = 0,
+        };
       }
 
       if (auto res = Expect('['); !res.has_value()) {
@@ -298,6 +298,15 @@ namespace hdl::internal {
       auto num1 = Number();
       if (!num1.has_value()) {
         return std::unexpected{num1.error()};
+      }
+
+      if (Current() == ']') {
+        Consume();
+        return ::hdl::Bus{
+          .name = ident.value(),
+          .start = static_cast<size_t>(num1.value()),
+          .end = static_cast<size_t>(num1.value() + 1),
+        };
       }
 
       if (auto res = ExpectStr(".."); !res.has_value()) {
@@ -362,7 +371,7 @@ namespace hdl::internal {
           break;
         }
 
-        Next();
+        Consume();
 
         if (auto res = SkipIgnorable(); !res.has_value()) {
           return std::unexpected{res.error()};
