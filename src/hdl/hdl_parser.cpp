@@ -291,9 +291,7 @@ namespace hdl::internal {
         };
       }
 
-      if (auto res = Expect('['); !res.has_value()) {
-        return std::unexpected{std::format("Expecting '[', {}", res.error())};
-      }
+      Consume();
 
       auto num1 = Number();
       if (!num1.has_value()) {
@@ -325,7 +323,7 @@ namespace hdl::internal {
       return ::hdl::Bus{
         .name = ident.value(),
         .start = static_cast<size_t>(num1.value()),
-        .end = static_cast<size_t>(num2.value()),
+        .end = static_cast<size_t>(num2.value() + 1),
       };
     }
 
