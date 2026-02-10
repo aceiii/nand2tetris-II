@@ -20,7 +20,7 @@ auto main(int argc, char *argv[]) -> int {
     return 1;
   }
 
-  spdlog::info("Loaded HDL module: {}", parser.Name());
+  spdlog::info("Loaded HDL module: {}", args.filename);
 
   auto port_names = [](const std::vector<hdl::Port>& ports) -> std::string {
     return util::StrJoin(ports, ", ", [](const hdl::Port& port) {
@@ -48,12 +48,14 @@ auto main(int argc, char *argv[]) -> int {
     });
   };
 
-  spdlog::info("| IN: {}", port_names(parser.InPorts()));
-  spdlog::info("| OUT: {}", port_names(parser.OutPorts()));
-  spdlog::info("| PARTS:");
+  spdlog::info("CHIP {} {{", parser.Name());
+  spdlog::info("  IN {};", port_names(parser.InPorts()));
+  spdlog::info("  OUT {};", port_names(parser.OutPorts()));
+  spdlog::info("  PARTS:");
   for (const auto& part: parser.Parts()) {
-    spdlog::info("|   {}({})", part.name, port_bindings(part.bindings));
+    spdlog::info("    {}({});", part.name, port_bindings(part.bindings));
   }
+  spdlog::info("}");
 
   spdlog::info("Exiting.");
 
