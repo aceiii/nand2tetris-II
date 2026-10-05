@@ -10,6 +10,7 @@ auto main(int argc, char *argv[]) -> int {
   auto arg_res = app::GetArgs("nand2tetris", "0.0.1", argc, argv);
   if (!arg_res.has_value()) {
     std::cerr << arg_res.error();
+    return 1;
   }
 
   app::Args args = arg_res.value();
