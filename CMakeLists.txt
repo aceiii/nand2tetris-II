@@ -2,23 +2,23 @@ cmake_minimum_required(VERSION 3.15)
 
 project(nand2tetris VERSION 0.0.1 LANGUAGES CXX)
 
-set(EXE_NAME main)
-
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(BUILD_HDL ON)
+
 add_compile_definitions(TOML_EXCEPTIONS=0)
 
 set(SOURCE_FILES
-        src/args.h
-        src/args.cpp
-        src/main.cpp
-        src/hdl/hdl_parser.h
-        src/hdl/hdl_parser.cpp
-        src/util/string.h
-        src/util/string.cpp
+    src/args.h
+    src/args.cpp
+    src/main.cpp
+    src/hdl/hdl_parser.h
+    src/hdl/hdl_parser.cpp
+    src/util/string.h
+    src/util/string.cpp
 )
 
 set(ARGPARSE_BUILD_TESTS OFF)
@@ -33,16 +33,40 @@ add_subdirectory(external/magic_enum)
 add_subdirectory(external/nativefiledialog-extended)
 add_subdirectory(external/tomlplusplus)
 
-add_executable(${EXE_NAME} ${SOURCE_FILES})
+add_executable(main ${SOURCE_FILES} src/main.cpp)
 
-target_link_libraries(${EXE_NAME} spdlog)
-target_link_libraries(${EXE_NAME} argparse)
-target_link_libraries(${EXE_NAME} magic_enum)
-target_link_libraries(${EXE_NAME} rlimgui)
-target_link_libraries(${EXE_NAME} nfd)
-target_link_libraries(${EXE_NAME} tomlplusplus::tomlplusplus)
+target_link_libraries(main PRIVATE
+    argparse::argparse
+    spdlog::spdlog
+    magic_enum
+    tomlplusplus::tomlplusplus
+    rlimgui
+    nfd
+)
 
-target_include_directories(${EXE_NAME} PUBLIC external/rlimgui)
+target_include_directories(main PUBLIC external/rlimgui)
 
-set_target_properties(${EXE_NAME} PROPERTIES OUTPUT_NAME nand2tetris)
+set_target_properties(main PROPERTIES OUTPUT_NAME nand2tetris)
 
+if (BUILD_HDL)
+
+add_executable(hdl
+    src/args.h
+    src/args.cpp
+    src/hdl-main.cpp
+    src/hdl/hdl_parser.h
+    src/hdl/hdl_parser.cpp
+    src/util/string.h
+    src/util/string.cpp
+)
+
+target_link_libraries(hdl PRIVATE
+    argparse::argparse
+    spdlog::spdlog
+    magic_enum
+    tomlplusplus::tomlplusplus
+    rlimgui
+    nfd
+)
+
+endif()
