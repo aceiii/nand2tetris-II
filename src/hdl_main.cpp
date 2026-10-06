@@ -10,8 +10,8 @@ namespace fs = std::filesystem;
 
 
 auto RunTestFile(fs::path path) {
-
-  return 0;
+  spdlog::error("Not yet implemented.");
+  return 1;
 }
 
 auto RunHdlFile(fs::path path) {
