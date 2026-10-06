@@ -63,10 +63,15 @@ auto RunHdlFile(fs::path path) {
 
 auto RunFile(std::string_view filename) {
   fs::path file_path{filename};
-  if (file_path.extension() == ".tst") {
+  auto ext = file_path.extension();
+  if (ext == ".tst") {
     return RunTestFile(file_path);
+  } else if (ext == ".hdl") {
+    return RunHdlFile(file_path);
   }
-  return RunHdlFile(file_path);
+
+  spdlog::error("The file ({}) is not supported. Only .hdl and .tst files are supported.", filename);
+  return -1;
 }
 
 auto main(int argc, char *argv[]) -> int {
