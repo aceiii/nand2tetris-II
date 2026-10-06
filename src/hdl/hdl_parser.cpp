@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include "hdl_parser.h"
+#include "hdl_parser.hpp"
 
 namespace fs = std::filesystem;
 
@@ -534,18 +534,16 @@ namespace hdl::internal {
   };
 }
 
-std::expected<hdl::Chip, std::string> hdl::Parser::Parse(std::string_view filename) {
-  fs::path abs_path = fs::absolute(filename);
-
-  std::ifstream file(abs_path, std::ios::in);
+std::expected<hdl::Chip, std::string> hdl::Parser::Parse(fs::path path) {
+  std::ifstream file(path, std::ios::in);
   if (!file.is_open()) {
-    const std::string error_msg = std::format("Failed to open file '{}': {}", abs_path.string(), strerror(errno));
+    const std::string error_msg = std::format("Failed to open file '{}': {}", path.string(), strerror(errno));
     return std::unexpected{error_msg};
   }
 
-  spdlog::info("Parsing file: {}", abs_path.string());
+  spdlog::info("Parsing file: {}", path.string());
 
-  auto size = fs::file_size(abs_path);
+  auto size = fs::file_size(path);
   std::vector<char> buffer(size);
   file.read(buffer.data(), size);
   file.close();

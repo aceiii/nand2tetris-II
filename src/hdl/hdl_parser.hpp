@@ -1,5 +1,4 @@
-#ifndef NAND2TETRIS_HDLPARSER_H
-#define NAND2TETRIS_HDLPARSER_H
+#pragma once
 
 #include <expected>
 #include <string>
@@ -46,8 +45,6 @@ namespace hdl {
   public:
     Parser() = delete;
 
-    static std::expected<Chip, std::string> Parse(std::string_view filename);
+    static std::expected<Chip, std::string> Parse(std::filesystem::path path);
   };
 }
-
-#endif //NAND2TETRIS_HDLPARSER_H

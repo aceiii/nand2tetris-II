@@ -1,31 +1,30 @@
-
+#include <filesystem>
 #include <iostream>
 #include <spdlog/spdlog.h>
 
-#include "args.h"
-#include "hdl/hdl_parser.h"
-#include "util/string.h"
+#include "args.hpp"
+#include "hdl/hdl_parser.hpp"
+#include "util/string.hpp"
+
+namespace fs = std::filesystem;
 
 
-auto main(int argc, char *argv[]) -> int {
-  auto arg_res = app::GetArgs("nand2tetris", "0.0.1", argc, argv);
-  if (!arg_res.has_value()) {
-    std::cerr << arg_res.error();
+auto RunTestFile(fs::path path) {
+
+  return 0;
+}
+
+auto RunHdlFile(fs::path path) {
+  auto chip = hdl::Parser::Parse(path);
+  if (!chip.has_value()) {
+    spdlog::error("Parse error: {}", chip.error());
     return 1;
   }
 
-  app::Args args = arg_res.value();
-  auto res = hdl::Parser::Parse(args.filename);
-
-  if (!res.has_value()) {
-    spdlog::error("Parse error: {}", res.error());
-    return 1;
-  }
-
-  spdlog::info("Loaded HDL module: {}", args.filename);
+  spdlog::info("Loaded HDL module: {}", path.string());
 
   auto port_names = [](const std::vector<hdl::Port>& ports) -> std::string {
-    return util::StrJoin(ports, ", ", [](const hdl::Port& port) {
+    return util::string::Join(ports, ", ", [](const hdl::Port& port) {
       if (port.width > 1) {
         return std::format("{}[{}]", port.name, port.width);
       }
@@ -45,23 +44,40 @@ auto main(int argc, char *argv[]) -> int {
   };
 
   auto port_bindings = [&](const std::vector<hdl::PortBinding>& bindings) -> std::string {
-    return util::StrJoin(bindings, ", ", [&](const hdl::PortBinding& binding) {
+    return util::string::Join(bindings, ", ", [&](const hdl::PortBinding& binding) {
       return std::format("{}={}", port_bus(binding.left), port_bus(binding.right));
     });
   };
 
-  auto chip = std::move(res.value());
-
-  spdlog::info("CHIP {} {{", chip.name);
-  spdlog::info("  IN {};", port_names(chip.in));
-  spdlog::info("  OUT {};", port_names(chip.out));
+  spdlog::info("CHIP {} {{", chip->name);
+  spdlog::info("  IN {};", port_names(chip->in));
+  spdlog::info("  OUT {};", port_names(chip->out));
   spdlog::info("  PARTS:");
-  for (const auto& part: chip.parts) {
+  for (const auto& part: chip->parts) {
     spdlog::info("    {}({});", part.name, port_bindings(part.bindings));
   }
   spdlog::info("}");
 
-  spdlog::info("Exiting.");
-
   return 0;
+}
+
+auto RunFile(std::string_view filename) {
+  fs::path file_path{filename};
+  if (file_path.extension() == ".tst") {
+    return RunTestFile(file_path);
+  }
+  return RunHdlFile(file_path);
+}
+
+auto main(int argc, char *argv[]) -> int {
+  auto args = app::GetArgs("nand2tetris", "0.0.1", argc, argv);
+  if (!args.has_value()) {
+    std::cerr << args.error();
+    return 1;
+  }
+
+  int res = RunFile(args->filename);
+
+  spdlog::info("Exiting.");
+  return res;
 }

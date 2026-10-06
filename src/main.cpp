@@ -2,9 +2,9 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 
-#include "args.h"
-#include "hdl/hdl_parser.h"
-#include "util/string.h"
+#include "args.hpp"
+#include "hdl/hdl_parser.hpp"
+#include "util/string.hpp"
 
 
 auto main(int argc, char *argv[]) -> int {

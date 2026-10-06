@@ -1,5 +1,4 @@
-#ifndef NAND2TETRIS_STRING_H
-#define NAND2TETRIS_STRING_H
+#pragma once
 
 #include <functional>
 #include <string>
@@ -7,9 +6,9 @@
 #include <sstream>
 
 
-namespace util {
+namespace util::string {
 
-  std::string StrJoin(const auto& strings, std::string_view separator = "") {
+  std::string Join(const auto& strings, std::string_view separator = "") {
     std::stringstream ss;
     int idx = 0;
     for (const auto& str: strings) {
@@ -22,7 +21,7 @@ namespace util {
     return ss.str();
   }
 
-  std::string StrJoin(const auto& strings, std::string_view separator, auto transformer) {
+  std::string Join(const auto& strings, std::string_view separator, auto transformer) {
     std::stringstream ss;
     int idx = 0;
     for (const auto& str: strings) {
@@ -35,8 +34,3 @@ namespace util {
     return ss.str();
   }
 }
-
-
-
-
-#endif //NAND2TETRIS_STRING_H

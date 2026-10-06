@@ -2,7 +2,7 @@
 #include <magic_enum/magic_enum.hpp>
 #include <spdlog/spdlog.h>
 
-#include "args.h"
+#include "args.hpp"
 
 
 static bool SetLoggingLevel(const std::string &level_name) {

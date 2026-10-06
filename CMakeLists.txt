@@ -12,12 +12,12 @@ option(BUILD_HDL ON)
 add_compile_definitions(TOML_EXCEPTIONS=0)
 
 set(SOURCE_FILES
-    src/args.h
+    src/args.hpp
     src/args.cpp
     src/main.cpp
-    src/hdl/hdl_parser.h
+    src/hdl/hdl_parser.hpp
     src/hdl/hdl_parser.cpp
-    src/util/string.h
+    src/util/string.hpp
     src/util/string.cpp
 )
 
@@ -51,12 +51,12 @@ set_target_properties(main PROPERTIES OUTPUT_NAME nand2tetris)
 if (BUILD_HDL)
 
 add_executable(hdl
-    src/args.h
+    src/args.hpp
     src/args.cpp
     src/hdl_main.cpp
-    src/hdl/hdl_parser.h
+    src/hdl/hdl_parser.hpp
     src/hdl/hdl_parser.cpp
-    src/util/string.h
+    src/util/string.hpp
     src/util/string.cpp
 )
 
