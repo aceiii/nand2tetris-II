@@ -35,19 +35,18 @@ namespace hdl {
     size_t width;
   };
 
-  class Parser {
-  public:
-    std::expected<void, std::string> Parse(std::string_view filename);
-    const std::string& Name() const;
-    const std::vector<Port>& InPorts() const;
-    const std::vector<Port>& OutPorts() const;
-    const std::vector<Part>& Parts() const;
+  struct Chip {
+    std::string name;
+    std::vector<Port> in;
+    std::vector<Port> out;
+    std::vector<Part> parts;
+  };
 
-  private:
-    std::string name_;
-    std::vector<Port> in_;
-    std::vector<Port> out_;
-    std::vector<Part> parts_;
+  class Parser final {
+  public:
+    Parser() = delete;
+
+    static std::expected<Chip, std::string> Parse(std::string_view filename);
   };
 }
 

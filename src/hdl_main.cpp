@@ -15,9 +15,9 @@ auto main(int argc, char *argv[]) -> int {
   }
 
   app::Args args = arg_res.value();
+  auto res = hdl::Parser::Parse(args.filename);
 
-  hdl::Parser parser;
-  if (auto res = parser.Parse(args.filename); !res.has_value()) {
+  if (!res.has_value()) {
     spdlog::error("Parse error: {}", res.error());
     return 1;
   }
@@ -50,11 +50,13 @@ auto main(int argc, char *argv[]) -> int {
     });
   };
 
-  spdlog::info("CHIP {} {{", parser.Name());
-  spdlog::info("  IN {};", port_names(parser.InPorts()));
-  spdlog::info("  OUT {};", port_names(parser.OutPorts()));
+  auto chip = std::move(res.value());
+
+  spdlog::info("CHIP {} {{", chip.name);
+  spdlog::info("  IN {};", port_names(chip.in));
+  spdlog::info("  OUT {};", port_names(chip.out));
   spdlog::info("  PARTS:");
-  for (const auto& part: parser.Parts()) {
+  for (const auto& part: chip.parts) {
     spdlog::info("    {}({});", part.name, port_bindings(part.bindings));
   }
   spdlog::info("}");

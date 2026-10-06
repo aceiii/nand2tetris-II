@@ -9,13 +9,6 @@ namespace hdl::internal {
   template <typename T = void>
   using ParseResult = std::expected<T, std::string>;
 
-  struct Chip {
-    std::string name;
-    std::vector<::hdl::Port> in;
-    std::vector<::hdl::Port> out;
-    std::vector<::hdl::Part> parts;
-  };
-
   struct InnerParser {
     std::string_view buffer;
     int idx = 0;
@@ -531,17 +524,17 @@ namespace hdl::internal {
         return std::unexpected{res.error()};
       }
 
-      return ::hdl::internal::Chip{
-        .name = ident.value(),
-        .in = in_section.value(),
-        .out = out_section.value(),
-        .parts = parts.value(),
+      return hdl::Chip{
+        .name = std::move(ident.value()),
+        .in = std::move(in_section.value()),
+        .out = std::move(out_section.value()),
+        .parts = std::move(parts.value()),
       };
     }
   };
 }
 
-std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
+std::expected<hdl::Chip, std::string> hdl::Parser::Parse(std::string_view filename) {
   fs::path abs_path = fs::absolute(filename);
 
   std::ifstream file(abs_path, std::ios::in);
@@ -566,28 +559,5 @@ std::expected<void, std::string> hdl::Parser::Parse(std::string_view filename) {
     return std::unexpected{res.error()};
   }
 
-  auto chip = res.value();
-
-  name_ = chip.name;
-  in_ = chip.in;
-  out_ = chip.out;
-  parts_ = chip.parts;
-
-  return {};
-}
-
-const std::string & hdl::Parser::Name() const {
-  return name_;
-}
-
-const std::vector<hdl::Port> & hdl::Parser::InPorts() const {
-  return in_;
-}
-
-const std::vector<hdl::Port> & hdl::Parser::OutPorts() const {
-  return out_;
-}
-
-const std::vector<hdl::Part> & hdl::Parser::Parts() const {
-  return parts_;
+  return res.value();
 }

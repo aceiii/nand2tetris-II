@@ -53,7 +53,7 @@ if (BUILD_HDL)
 add_executable(hdl
     src/args.h
     src/args.cpp
-    src/hdl-main.cpp
+    src/hdl_main.cpp
     src/hdl/hdl_parser.h
     src/hdl/hdl_parser.cpp
     src/util/string.h
