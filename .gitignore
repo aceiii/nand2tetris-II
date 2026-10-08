@@ -11,6 +11,9 @@ vcpkg_installed/
 .vscode/
 .cache/
 
+# submodules
+external/
+
 # cmake
 cmake-build-*
 CMakeUserPresets.json
@@ -22,3 +25,4 @@ main
 imgui.ini
 imgui_log.txt
 settings.toml
+
