@@ -569,23 +569,9 @@ namespace hdl::test::internal {
   };
 }
 
-TestParserResult TestParser::Parse(fs::path path) {
-  std::ifstream file(path, std::ios::in);
-  if (!file.is_open()) {
-    const std::string error_msg = std::format("Failed to open file '{}': {}", path.string(), strerror(errno));
-    return std::unexpected{error_msg};
-  }
-
-  spdlog::info("Parsing Test file: {}", path.string());
-
-  auto size = fs::file_size(path);
-  std::vector<char> buffer(size);
-  file.read(buffer.data(), size);
-  file.close();
-  spdlog::debug("Read {} bytes", size);
-
+TestParserResult TestParser::Parse(std::string_view contents) {
   internal::InnerParser parser;
-  parser.buffer = std::string_view{buffer};
+  parser.buffer = contents;
 
   auto res = parser.Commands();
   if (!res.has_value()) {

@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 
+
 namespace hdl {
   struct Bus {
     std::string name;
@@ -45,6 +46,6 @@ namespace hdl {
   public:
     Parser() = delete;
 
-    static std::expected<Chip, std::string> Parse(std::filesystem::path path);
+    static std::expected<Chip, std::string> Parse(std::string_view contents);
   };
 }

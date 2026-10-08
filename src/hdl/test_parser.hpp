@@ -1,7 +1,6 @@
 #pragma once
 
 #include <expected>
-#include <filesystem>
 #include <string>
 
 
@@ -31,6 +30,6 @@ namespace hdl::test {
   public:
     TestParser() = delete;
 
-    static TestParserResult Parse(std::filesystem::path path);
+    static TestParserResult Parse(std::string_view contents);
   };
 }

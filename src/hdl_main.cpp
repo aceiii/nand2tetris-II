@@ -7,6 +7,7 @@
 #include "args.hpp"
 #include "hdl/hdl_parser.hpp"
 #include "hdl/test_parser.hpp"
+#include "util/file.hpp"
 #include "util/string.hpp"
 
 namespace fs = std::filesystem;
@@ -32,7 +33,15 @@ auto FormatCommand(const hdl::test::TestCommand& command) {
 }
 
 auto RunTestFile(fs::path path) {
-  auto commands = hdl::test::TestParser::Parse(path);
+  auto contents = util::file::Read(path);
+  if (!contents.has_value()) {
+    spdlog::error("File error: {}", contents.error());
+    return 1;
+  }
+
+  spdlog::info("Parsing test file: {}", path.string());
+
+  auto commands = hdl::test::TestParser::Parse(std::string_view{contents.value()});
   if (!commands.has_value()) {
     spdlog::error("Parse error: {}", commands.error());
     return 1;
@@ -46,7 +55,15 @@ auto RunTestFile(fs::path path) {
 }
 
 auto RunHdlFile(fs::path path) {
-  auto chip = hdl::Parser::Parse(path);
+  auto contents = util::file::Read(path);
+  if (!contents.has_value()) {
+    spdlog::error("File error: {}", contents.error());
+    return 1;
+  }
+
+  spdlog::info("Parsing hdl file: {}", path.string());
+
+  auto chip = hdl::Parser::Parse(std::string_view{contents.value()});
   if (!chip.has_value()) {
     spdlog::error("Parse error: {}", chip.error());
     return 1;

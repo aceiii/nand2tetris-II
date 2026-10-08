@@ -60,6 +60,8 @@ if (BUILD_HDL)
         src/hdl/hdl_parser.cpp
         src/hdl/test_parser.hpp
         src/hdl/test_parser.cpp
+        src/util/file.hpp
+        src/util/file.cpp
         src/util/string.hpp
         src/util/string.cpp
     )
@@ -76,9 +78,21 @@ if (BUILD_HDL)
     if (BUILD_TESTS)
         enable_testing()
 
-        add_executable(hdl-tests src/tests/hdl_test.cpp)
+        add_executable(hdl-tests
+            tests/hdl_test.cpp
+            src/hdl/hdl_parser.hpp
+            src/hdl/hdl_parser.cpp
+            src/hdl/test_parser.hpp
+            src/hdl/test_parser.cpp
+            src/util/string.hpp
+            src/util/string.cpp
+        )
 
-        target_link_libraries(hdl-tests Catch2::Catch2WithMain)
+        target_link_libraries(hdl-tests
+            spdlog::spdlog
+            magic_enum
+            Catch2::Catch2WithMain
+        )
     endif()
 
 endif()

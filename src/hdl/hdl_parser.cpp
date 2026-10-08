@@ -534,23 +534,9 @@ namespace hdl::internal {
   };
 }
 
-std::expected<hdl::Chip, std::string> hdl::Parser::Parse(fs::path path) {
-  std::ifstream file(path, std::ios::in);
-  if (!file.is_open()) {
-    const std::string error_msg = std::format("Failed to open file '{}': {}", path.string(), strerror(errno));
-    return std::unexpected{error_msg};
-  }
-
-  spdlog::info("Parsing HDL file: {}", path.string());
-
-  auto size = fs::file_size(path);
-  std::vector<char> buffer(size);
-  file.read(buffer.data(), size);
-  file.close();
-  spdlog::debug("Read {} bytes", size);
-
+std::expected<hdl::Chip, std::string> hdl::Parser::Parse(std::string_view contents) {
   internal::InnerParser parser;
-  parser.buffer = std::string_view{buffer};
+  parser.buffer = contents;
 
   auto res = parser.Chip();
   if (!res.has_value()) {
