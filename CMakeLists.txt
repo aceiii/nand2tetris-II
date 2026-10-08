@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BUILD_HDL ON)
+option(BUILD_TESTS OFF)
 
 add_compile_definitions(TOML_EXCEPTIONS=0)
 
@@ -32,6 +33,7 @@ add_subdirectory(external/argparse)
 add_subdirectory(external/magic_enum)
 add_subdirectory(external/nativefiledialog-extended)
 add_subdirectory(external/tomlplusplus)
+add_subdirectory(external/catch2)
 
 add_executable(main ${SOURCE_FILES} src/main.cpp)
 
@@ -50,25 +52,33 @@ set_target_properties(main PROPERTIES OUTPUT_NAME nand2tetris)
 
 if (BUILD_HDL)
 
-add_executable(hdl
-    src/args.hpp
-    src/args.cpp
-    src/hdl_main.cpp
-    src/hdl/hdl_parser.hpp
-    src/hdl/hdl_parser.cpp
-    src/hdl/test_parser.hpp
-    src/hdl/test_parser.cpp
-    src/util/string.hpp
-    src/util/string.cpp
-)
+    add_executable(hdl
+        src/args.hpp
+        src/args.cpp
+        src/hdl_main.cpp
+        src/hdl/hdl_parser.hpp
+        src/hdl/hdl_parser.cpp
+        src/hdl/test_parser.hpp
+        src/hdl/test_parser.cpp
+        src/util/string.hpp
+        src/util/string.cpp
+    )
 
-target_link_libraries(hdl PRIVATE
-    argparse::argparse
-    spdlog::spdlog
-    magic_enum
-    tomlplusplus::tomlplusplus
-    rlimgui
-    nfd
-)
+    target_link_libraries(hdl PRIVATE
+        argparse::argparse
+        spdlog::spdlog
+        magic_enum
+        tomlplusplus::tomlplusplus
+        rlimgui
+        nfd
+    )
+
+    if (BUILD_TESTS)
+        enable_testing()
+
+        add_executable(hdl-tests src/tests/hdl_test.cpp)
+
+        target_link_libraries(hdl-tests Catch2::Catch2WithMain)
+    endif()
 
 endif()
