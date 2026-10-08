@@ -1,16 +1,47 @@
 #include <filesystem>
+#include <format>
 #include <iostream>
+#include <magic_enum/magic_enum.hpp>
 #include <spdlog/spdlog.h>
 
 #include "args.hpp"
 #include "hdl/hdl_parser.hpp"
+#include "hdl/test_parser.hpp"
 #include "util/string.hpp"
 
 namespace fs = std::filesystem;
 
 
+auto FormatCommand(const hdl::test::TestCommand& command) {
+  const auto name = magic_enum::enum_name(command.type);
+
+  switch (command.type) {
+  case hdl::test::CommandType::Load:
+  case hdl::test::CommandType::OutputFile:
+  case hdl::test::CommandType::CompareTo:
+    return std::format("{} {}", name, command.filename);
+  case hdl::test::CommandType::OutputList:
+    return std::format("{} {}", name, util::string::Join(command.patterns, " "));
+  case hdl::test::CommandType::Set:
+    return std::format("{} {} {}", name, command.ident, command.value);
+  case hdl::test::CommandType::Eval:
+  case hdl::test::CommandType::Output:
+    return std::string(name);
+  default: std::unreachable();
+  }
+}
+
 auto RunTestFile(fs::path path) {
-  spdlog::error("Not yet implemented.");
+  auto commands = hdl::test::TestParser::Parse(path);
+  if (!commands.has_value()) {
+    spdlog::error("Parse error: {}", commands.error());
+    return 1;
+  }
+
+  for (const auto &command : commands.value()) {
+    spdlog::info("Command: {}", FormatCommand(command));
+  }
+
   return 1;
 }
 
@@ -53,6 +84,7 @@ auto RunHdlFile(fs::path path) {
   spdlog::info("  IN {};", port_names(chip->in));
   spdlog::info("  OUT {};", port_names(chip->out));
   spdlog::info("  PARTS:");
+
   for (const auto& part: chip->parts) {
     spdlog::info("    {}({});", part.name, port_bindings(part.bindings));
   }

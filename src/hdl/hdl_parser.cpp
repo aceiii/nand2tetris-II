@@ -541,7 +541,7 @@ std::expected<hdl::Chip, std::string> hdl::Parser::Parse(fs::path path) {
     return std::unexpected{error_msg};
   }
 
-  spdlog::info("Parsing file: {}", path.string());
+  spdlog::info("Parsing HDL file: {}", path.string());
 
   auto size = fs::file_size(path);
   std::vector<char> buffer(size);

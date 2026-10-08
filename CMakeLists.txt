@@ -56,6 +56,8 @@ add_executable(hdl
     src/hdl_main.cpp
     src/hdl/hdl_parser.hpp
     src/hdl/hdl_parser.cpp
+    src/hdl/test_parser.hpp
+    src/hdl/test_parser.cpp
     src/util/string.hpp
     src/util/string.cpp
 )
