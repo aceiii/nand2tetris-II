@@ -79,7 +79,8 @@ if (BUILD_HDL)
         enable_testing()
 
         add_executable(hdl-tests
-            tests/hdl_test.cpp
+            tests/hdl_parser_tests.cpp
+            tests/test_parser_tests.cpp
             src/hdl/hdl_parser.hpp
             src/hdl/hdl_parser.cpp
             src/hdl/test_parser.hpp

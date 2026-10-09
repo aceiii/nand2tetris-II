@@ -551,6 +551,10 @@ namespace hdl::test::internal {
     auto Commands() -> ParseResult<std::vector<TestCommand>> {
       std::vector<TestCommand> commands;
 
+      if (auto res = SkipIgnorable(); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
       while (!Eof()) {
         auto command_group = CommandGroup();
         if (!command_group.has_value()) {
