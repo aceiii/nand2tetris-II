@@ -106,14 +106,6 @@ namespace hdl::internal {
       return c - '0';
     }
 
-    auto StartDigit() -> ParseResult<int> {
-      auto c = Current();
-      if (c < '0' || c > '9') {
-        return std::unexpected{std::format("Unexpected character '{}'", c)};
-      }
-      return c - '0';
-    }
-
     auto Whitespace() -> ParseResult<> {
       auto c = Current();
       if (!IsWhitespace(c)) {
