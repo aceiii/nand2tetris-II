@@ -57,10 +57,10 @@ namespace hdl::test::internal {
     }
 
     auto SkipIgnorable() -> ParseResult<> {
+      SkipWhitespace();
       if (auto res = SkipComments(); !res.has_value()) {
         return std::unexpected{res.error()};
       }
-      SkipWhitespace();
       return {};
     }
 
@@ -556,7 +556,7 @@ namespace hdl::test::internal {
         return std::unexpected{res.error()};
       }
 
-      spdlog::trace("CommandGroup end.");
+      spdlog::trace("CommandGroup end, index={}.", idx);
 
       return commands;
     }
@@ -571,6 +571,8 @@ namespace hdl::test::internal {
       spdlog::trace("Commands start.");
 
       while (!Eof()) {
+        spdlog::trace("commands next, idx: {}", idx);
+
         auto command_group = CommandGroup();
         if (!command_group.has_value()) {
           return std::unexpected{command_group.error()};
