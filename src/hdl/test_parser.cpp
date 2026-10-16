@@ -105,15 +105,6 @@ namespace hdl::test::internal {
       return {};
     }
 
-    auto ExpectOneOf(std::string_view sv) -> ParseResult<char> {
-      auto curr = Current();
-      auto found = sv.find_first_of(curr);
-      if (found == std::string_view::npos) {
-        return std::unexpected{std::format("Unexpected one of: {}", sv)};
-      }
-      return sv.substr(found, 1).at(0);
-    }
-
     auto Digit() -> ParseResult<int> {
       auto c = Current();
       if (c < '0' || c > '9') {
@@ -345,7 +336,7 @@ namespace hdl::test::internal {
       });
 
       if (found == keywords.end()) {
-        return std::unexpected{"Expected one of: load, output-file, compare-to, output-list, set, eval, output"};
+        return std::unexpected{std::format("Got: {}; Expected one of: load, output-file, compare-to, output-list, set, eval, output", token.value())};
       }
 
       spdlog::trace("Keyword end, found {}.", found->keyword);
