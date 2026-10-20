@@ -13,6 +13,29 @@
 namespace fs = std::filesystem;
 
 
+auto FormatPatternFormat(const hdl::test::PatternFormat& format) {
+  using namespace hdl::test;
+  switch (format) {
+    case PatternFormat::Binary: return 'B';
+    case PatternFormat::Hexadecimal: return 'X';
+    case PatternFormat::Decimal: return 'D';
+    case PatternFormat::String: return 'S';
+    default: std::unreachable();
+  }
+}
+
+auto FormatPattern(const hdl::test::Pattern& pattern) {
+  return std::format("%{}{}.{}.{}", FormatPatternFormat(pattern.format), pattern.width, pattern.left, pattern.right);
+}
+
+auto FormatColumn(const hdl::test::Column& column) {
+  if (!column.pattern.has_value()) {
+    return column.name;
+  }
+
+  return std::format("{}{}", column.name, FormatPattern(column.pattern.value()));
+}
+
 auto FormatCommand(const hdl::test::TestCommand& command) {
   const auto name = magic_enum::enum_name(command.type);
 
@@ -22,7 +45,7 @@ auto FormatCommand(const hdl::test::TestCommand& command) {
   case hdl::test::CommandType::CompareTo:
     return std::format("{} {}", name, command.filename);
   case hdl::test::CommandType::OutputList:
-    return std::format("{} {}", name, util::string::Join(command.patterns, " "));
+    return std::format("{} {}", name, util::string::Join(command.columns, " ", FormatColumn));
   case hdl::test::CommandType::Set:
     return std::format("{} {} {}", name, command.ident, command.value);
   case hdl::test::CommandType::Eval:

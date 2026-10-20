@@ -1,6 +1,7 @@
 #pragma once
 
 #include <expected>
+#include <optional>
 #include <string>
 
 
@@ -16,10 +17,29 @@ namespace hdl::test {
     Output,
   };
 
+  enum class PatternFormat {
+    Binary,
+    Hexadecimal,
+    Decimal,
+    String,
+  };
+
+  struct Pattern {
+    PatternFormat format;
+    size_t width;
+    size_t left;
+    size_t right;
+  };
+
+  struct Column {
+    std::string name;
+    std::optional<Pattern> pattern;
+  };
+
   struct TestCommand {
     CommandType type;
     std::string filename;
-    std::vector<std::string> patterns;
+    std::vector<Column> columns;
     std::string ident;
     std::string value;
   };

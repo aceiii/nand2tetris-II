@@ -90,7 +90,7 @@ namespace hdl::test::internal {
     auto Expect(char expected) -> ParseResult<> {
       auto c = Current();
       if (c != expected) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}, expecting '{}'.", c, idx, expected)};
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting '{}'.", c, idx, expected)};
       }
       Consume();
       return {};
@@ -116,23 +116,24 @@ namespace hdl::test::internal {
     auto Whitespace() -> ParseResult<> {
       auto c = Current();
       if (!IsWhitespace(c)) {
-        return std::unexpected(std::format("Unexpected character '{}', expecting whitespace", c));
+        return std::unexpected{std::format("Unexpected character '{}', expecting whitespace", c)};
       }
       return {};
     }
 
     auto Number() -> ParseResult<int> {
+      auto idx_start = idx;
       auto c = Current();
       if (c == '0') {
         if (IsAlphaNumeric(Peek())) {
-          return std::unexpected{std::format("Unexpected '{}' at index {}, expecting non-alphanumeric character.", Peek(), idx + 1)};
+          return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting non-alphanumeric character.", Peek(), idx + 1)};
         }
         Consume();
         return 0;
       }
 
       if (!isdigit(c)) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}, expecting digits 0-9..", c, idx)};
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9..", c, idx)};
       }
 
       int number = c - '0';
@@ -142,11 +143,13 @@ namespace hdl::test::internal {
         if (isdigit(c)) {
           number = (number * 10) + (c - '0');
         } else {
-          return std::unexpected{std::format("Unexpected '{}' at index {}, expecting digits 0-9.", c, idx)};
+          return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9.", c, idx)};
         }
         Consume();
         c = Current();
       }
+
+      spdlog::trace("Found number {} at index {}", number, idx_start);
 
       return number;
     }
@@ -162,16 +165,17 @@ namespace hdl::test::internal {
     auto IdentChar() -> ParseResult<char> {
       auto c = Current();
       if (!IsAlphaNumeric(c)) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}, expecting identifier character.", c, idx)};
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting identifier character.", c, idx)};
       }
       Consume();
       return c;
     }
 
     auto TokenChar() -> ParseResult<char> {
+      auto idx_start = idx;
       auto c = Current();
       if (!IsTokenChar(c)) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}, epxecting token character.", c, idx)};
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, epxecting token character.", c, idx)};
       }
       Consume();
       return c;
@@ -180,7 +184,7 @@ namespace hdl::test::internal {
     auto IdentStart() -> ParseResult<char> {
       auto c = Current();
       if (!isalpha(c)) {
-        return std::unexpected{std::format("Unexpected '{}' at index {}, expecting letter.", c, idx)};
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting letter.", c, idx)};
       }
       Consume();
       return c;
@@ -192,6 +196,7 @@ namespace hdl::test::internal {
       }
 
       std::stringstream ss;
+      auto idx_start = idx;
       auto res = IdentStart();
       if (!res.has_value()) {
         return std::unexpected{res.error()};
@@ -202,6 +207,8 @@ namespace hdl::test::internal {
         res = IdentChar();
         ss << res.value();
       }
+
+      spdlog::trace("Found ident '{}' at index {}", ss.str(), idx_start);
       return ss.str();
     }
 
@@ -211,7 +218,9 @@ namespace hdl::test::internal {
       }
 
       std::stringstream ss;
+      auto idx_start = idx;
       auto res = IdentStart();
+
       if (!res.has_value()) {
         return std::unexpected{res.error()};
       }
@@ -221,6 +230,8 @@ namespace hdl::test::internal {
         res = TokenChar();
         ss << res.value();
       }
+
+      spdlog::trace("Found token '{}' at index {}", ss.str(), idx_start);
       return ss.str();
     }
 
@@ -233,7 +244,7 @@ namespace hdl::test::internal {
       switch (c) {
         case '\'': return "'";
         case '"': return "\"";
-        default: return std::unexpected{std::format("Unexpected escape sequence '\\{}'", c)};
+        default: return std::unexpected{std::format("Unexpected escape sequence '\\{}' at index {}", c, idx)};
       }
     }
 
@@ -309,11 +320,11 @@ namespace hdl::test::internal {
     }
 
     auto Keyword() -> ParseResult<CommandType> {
-      spdlog::trace("Keyword start.");
+      spdlog::trace("Keyword start at index {}.", idx);
 
       auto token = Token();
       if (!token.has_value()) {
-        return std::unexpected(token.error());
+        return std::unexpected{token.error()};
       }
 
       struct CommandKeyword {
@@ -336,43 +347,112 @@ namespace hdl::test::internal {
       });
 
       if (found == keywords.end()) {
-        return std::unexpected{std::format("Got: {}; Expected one of: load, output-file, compare-to, output-list, set, eval, output", token.value())};
+        return std::unexpected{std::format("Unexpected token '{}' at index {}, expected one of: load, output-file, compare-to, output-list, set, eval, output", token.value(), idx)};
       }
 
-      spdlog::trace("Keyword end, found {}.", found->keyword);
+      spdlog::trace("Keyword end, found keyword {}.", found->keyword);
 
       return found->command_type;
     }
 
-    auto Pattern() -> ParseResult<std::string> {
-      SkipWhitespace();
-
-      std::stringstream ss;
-
-      while (!Eof()) {
-        auto c = Current();
-        if (IsAlphaNumeric(c) || c == '.' || c == '%') {
-          ss << c;
-          Consume();
-          continue;
-        }
-
-        break;
+    auto Format() -> ParseResult<PatternFormat> {
+      auto c = Current();
+      PatternFormat format;
+      switch (c) {
+        case 'B': format = PatternFormat::Binary; break;
+        case 'X': format = PatternFormat::Hexadecimal; break;
+        case 'D': format = PatternFormat::Decimal; break;
+        case 'S': format = PatternFormat::String; break;
+        default: return std::unexpected{std::format("Got '{}', expected one of: 'B', 'X', 'D', 'S'", c)};
       }
 
-      return ss.str();
+      spdlog::trace("Found format '{}' at index {}", magic_enum::enum_name(format), idx);
+
+      Consume();
+      return format;
+    };
+
+    auto Pattern() -> ParseResult<Pattern> {
+      spdlog::trace("Pattern start at index {}", idx);
+
+      if (auto res = Expect('%'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto format = Format();
+      if (!format.has_value()) {
+        return std::unexpected{format.error()};
+      }
+
+      auto width = Number();
+      if (!width.has_value()) {
+        return std::unexpected{width.error()};
+      }
+
+      if (auto res = Expect('.'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto left = Number();
+      if (!left.has_value()) {
+        return std::unexpected{left.error()};
+      }
+
+      if (auto res = Expect('.'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto right = Number();
+      if (!right.has_value()) {
+        return std::unexpected{right.error()};
+      }
+
+      spdlog::trace("Pattern end, Found pattern {}{}.{}.{}", magic_enum::enum_name(format.value()), width.value(), left.value(), right.value());
+
+      return ::Pattern{
+        .format = std::move(format.value()),
+        .width = static_cast<size_t>(width.value()),
+        .left = static_cast<size_t>(left.value()),
+        .right = static_cast<size_t>(right.value()),
+      };
+    };
+
+    auto Column() -> ParseResult<Column> {
+      SkipWhitespace();
+
+      auto token = Token();
+      if (!token.has_value()) {
+        return std::unexpected{token.error()};
+      }
+
+      if (Current() != '%') {
+        return ::Column{
+          .name = std::move(token.value()),
+          .pattern = std::nullopt,
+        };
+      }
+
+      auto pattern = Pattern();
+      if (!pattern.has_value()) {
+        return std::unexpected{pattern.error()};
+      }
+
+      return ::Column{
+        .name = std::move(token.value()),
+        .pattern = std::move(pattern.value()),
+      };
     }
 
-    auto Patterns() -> ParseResult<std::vector<std::string>> {
-      std::vector<std::string> patterns;
+    auto Columns() -> ParseResult<std::vector<::Column>> {
+      std::vector<::Column> columns;
 
       while (!Eof()) {
-        auto pattern = Pattern();
-        if (!pattern.has_value()) {
-          return std::unexpected{pattern.error()};
+        auto column = Column();
+        if (!column.has_value()) {
+          return std::unexpected{column.error()};
         }
 
-        patterns.push_back(std::move(pattern.value()));
+        columns.push_back(std::move(column.value()));
 
         auto c = Current();
         if (c == ',' || c == ';') {
@@ -380,7 +460,7 @@ namespace hdl::test::internal {
         }
       }
 
-      return patterns;
+      return columns;
     }
 
     auto Value() -> ParseResult<std::string> {
@@ -419,14 +499,14 @@ namespace hdl::test::internal {
     }
 
     auto OutputListCommand() -> ParseResult<TestCommand> {
-      auto patterns = Patterns();
-      if (!patterns.has_value()) {
-        return std::unexpected{patterns.error()};
+      auto columns = Columns();
+      if (!columns.has_value()) {
+        return std::unexpected{columns.error()};
       }
 
       return TestCommand{
         .type = CommandType::OutputList,
-        .patterns = std::move(patterns.value()),
+        .columns = std::move(columns.value()),
       };
     }
 
@@ -477,11 +557,11 @@ namespace hdl::test::internal {
     }
 
     auto Command() -> ParseResult<TestCommand> {
-      spdlog::trace("Command start.");
+      spdlog::trace("Command start at indx {}", idx);
 
       auto keyword = Keyword();
       if (!keyword.has_value()) {
-        return std::unexpected(keyword.error());
+        return std::unexpected{keyword.error()};
       }
 
       SkipWhitespace();
@@ -507,7 +587,7 @@ namespace hdl::test::internal {
     auto CommandGroup() -> ParseResult<std::vector<TestCommand>> {
       std::vector<TestCommand> commands;
 
-      spdlog::trace("CommandGroup start");
+      spdlog::trace("CommandGroup start at index {}", idx);
 
       while (!Eof()) {
         if (auto res = SkipIgnorable(); !res.has_value()) {
@@ -547,7 +627,7 @@ namespace hdl::test::internal {
         return std::unexpected{res.error()};
       }
 
-      spdlog::trace("CommandGroup end, index={}.", idx);
+      spdlog::trace("CommandGroup end at index={}.", idx);
 
       return commands;
     }
@@ -559,10 +639,10 @@ namespace hdl::test::internal {
         return std::unexpected{res.error()};
       }
 
-      spdlog::trace("Commands start.");
+      spdlog::trace("Commands start at index {}.", idx);
 
       while (!Eof()) {
-        spdlog::trace("commands next, idx: {}", idx);
+        spdlog::trace("commands next at index {}", idx);
 
         auto command_group = CommandGroup();
         if (!command_group.has_value()) {

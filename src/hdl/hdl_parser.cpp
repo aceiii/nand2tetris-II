@@ -109,7 +109,7 @@ namespace hdl::internal {
     auto Whitespace() -> ParseResult<> {
       auto c = Current();
       if (!IsWhitespace(c)) {
-        return std::unexpected(std::format("Unexpected character '{}'", c));
+        return std::unexpected{std::format("Unexpected character '{}'", c)};
       }
       return {};
     }
@@ -410,7 +410,7 @@ namespace hdl::internal {
       }
 
       if (auto res = Expect(':'); !res.has_value()) {
-        return std::unexpected(res.error());
+        return std::unexpected{res.error()};
       }
 
       if (auto res = SkipIgnorable(); !res.has_value()) {
