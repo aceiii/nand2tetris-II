@@ -3,10 +3,10 @@
 #include <print>
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/hdl/test_parser.hpp"
+#include "../src/test/test_parser.hpp"
 
 
-using namespace hdl::test;
+using namespace test;
 
 TEST_CASE("TestParser parses empty string") {
   auto result = TestParser::Parse("");

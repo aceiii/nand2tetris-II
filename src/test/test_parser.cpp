@@ -10,10 +10,10 @@
 
 namespace fs = std::filesystem;
 
-using namespace hdl::test;
+using namespace test;
 
 
-namespace hdl::test::internal {
+namespace test::internal {
   template <typename T = void>
   using ParseResult = std::expected<T, std::string>;
 

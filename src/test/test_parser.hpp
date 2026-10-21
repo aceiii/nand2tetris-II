@@ -3,9 +3,10 @@
 #include <expected>
 #include <optional>
 #include <string>
+#include <vector>
 
 
-namespace hdl::test {
+namespace test {
 
   enum class CommandType {
     Load,

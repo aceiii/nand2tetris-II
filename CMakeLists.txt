@@ -58,8 +58,10 @@ if (BUILD_HDL)
         src/hdl_main.cpp
         src/hdl/hdl_parser.hpp
         src/hdl/hdl_parser.cpp
-        src/hdl/test_parser.hpp
-        src/hdl/test_parser.cpp
+        src/test/test_parser.hpp
+        src/test/test_parser.cpp
+        src/test/runner.hpp
+        src/test/runner.cpp
         src/util/file.hpp
         src/util/file.cpp
         src/util/string.hpp
@@ -83,8 +85,8 @@ if (BUILD_HDL)
             tests/test_parser_tests.cpp
             src/hdl/hdl_parser.hpp
             src/hdl/hdl_parser.cpp
-            src/hdl/test_parser.hpp
-            src/hdl/test_parser.cpp
+            src/test/test_parser.hpp
+            src/test/test_parser.cpp
             src/util/string.hpp
             src/util/string.cpp
         )

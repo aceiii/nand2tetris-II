@@ -6,15 +6,16 @@
 
 #include "args.hpp"
 #include "hdl/hdl_parser.hpp"
-#include "hdl/test_parser.hpp"
+#include "test/runner.hpp"
+#include "test/test_parser.hpp"
 #include "util/file.hpp"
 #include "util/string.hpp"
 
 namespace fs = std::filesystem;
 
 
-auto FormatPatternFormat(const hdl::test::PatternFormat& format) {
-  using namespace hdl::test;
+auto FormatPatternFormat(const test::PatternFormat& format) {
+  using namespace test;
   switch (format) {
     case PatternFormat::Binary: return 'B';
     case PatternFormat::Hexadecimal: return 'X';
@@ -24,11 +25,11 @@ auto FormatPatternFormat(const hdl::test::PatternFormat& format) {
   }
 }
 
-auto FormatPattern(const hdl::test::Pattern& pattern) {
+auto FormatPattern(const test::Pattern& pattern) {
   return std::format("%{}{}.{}.{}", FormatPatternFormat(pattern.format), pattern.width, pattern.left, pattern.right);
 }
 
-auto FormatColumn(const hdl::test::Column& column) {
+auto FormatColumn(const test::Column& column) {
   if (!column.pattern.has_value()) {
     return column.name;
   }
@@ -36,22 +37,22 @@ auto FormatColumn(const hdl::test::Column& column) {
   return std::format("{}{}", column.name, FormatPattern(column.pattern.value()));
 }
 
-auto FormatCommand(const hdl::test::TestCommand& command) {
+auto FormatCommand(const test::TestCommand& command) {
   const auto name = magic_enum::enum_name(command.type);
 
   switch (command.type) {
-  case hdl::test::CommandType::Load:
-  case hdl::test::CommandType::OutputFile:
-  case hdl::test::CommandType::CompareTo:
+  case test::CommandType::Load:
+  case test::CommandType::OutputFile:
+  case test::CommandType::CompareTo:
     return std::format("{} {}", name, command.filename);
-  case hdl::test::CommandType::OutputList:
+  case test::CommandType::OutputList:
     return std::format("{} {}", name, util::string::Join(command.columns, " ", FormatColumn));
-  case hdl::test::CommandType::Set:
+  case test::CommandType::Set:
     return std::format("{} {} {}", name, command.ident, command.value);
-  case hdl::test::CommandType::Eval:
-  case hdl::test::CommandType::Output:
-  case hdl::test::CommandType::Tick:
-  case hdl::test::CommandType::Tock:
+  case test::CommandType::Eval:
+  case test::CommandType::Output:
+  case test::CommandType::Tick:
+  case test::CommandType::Tock:
     return std::string(name);
   default: std::unreachable();
   }
@@ -66,7 +67,7 @@ auto RunTestFile(fs::path path) {
 
   spdlog::info("Parsing test file: {}", path.string());
 
-  auto commands = hdl::test::TestParser::Parse(std::string_view{contents.value()});
+  auto commands = test::TestParser::Parse(std::string_view{contents.value()});
   if (!commands.has_value()) {
     spdlog::error("Parse error: {}", commands.error());
     return 1;
@@ -76,7 +77,8 @@ auto RunTestFile(fs::path path) {
     spdlog::info("Command: {}", FormatCommand(command));
   }
 
-  return 1;
+  test::TestRunner test_runner{std::move(commands.value())};
+  return test_runner.Run();
 }
 
 auto RunHdlFile(fs::path path) {
