@@ -50,6 +50,8 @@ auto FormatCommand(const hdl::test::TestCommand& command) {
     return std::format("{} {} {}", name, command.ident, command.value);
   case hdl::test::CommandType::Eval:
   case hdl::test::CommandType::Output:
+  case hdl::test::CommandType::Tick:
+  case hdl::test::CommandType::Tock:
     return std::string(name);
   default: std::unreachable();
   }

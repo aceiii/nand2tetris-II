@@ -43,7 +43,7 @@ namespace hdl::test {
     std::string filename;
     std::vector<Column> columns;
     std::string ident;
-    std::string value;
+    int64_t value;
   };
 
   using TestParserResult = std::expected<std::vector<TestCommand>, std::string>;

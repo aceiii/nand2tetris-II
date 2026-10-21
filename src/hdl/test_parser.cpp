@@ -1,3 +1,4 @@
+#include <charconv>
 #include <format>
 #include <fstream>
 #include <vector>
@@ -121,7 +122,7 @@ namespace hdl::test::internal {
       return {};
     }
 
-    auto Number() -> ParseResult<int> {
+    auto DecimalNumber(bool allow_neg = false) -> ParseResult<int64_t> {
       auto idx_start = idx;
       auto c = Current();
       if (c == '0') {
@@ -132,11 +133,19 @@ namespace hdl::test::internal {
         return 0;
       }
 
+      bool negative = false;
+      if (allow_neg && c == '-') {
+        spdlog::trace("Found '-', expecting negative number at index {}", idx);
+        Consume();
+        negative = true;
+        c = Current();
+      }
+
       if (!isdigit(c)) {
         return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9..", c, idx)};
       }
 
-      int number = c - '0';
+      int64_t number = c - '0';
       Consume();
       c = Current();
       while (IsAlphaNumeric(c)) {
@@ -152,6 +161,48 @@ namespace hdl::test::internal {
       spdlog::trace("Found number {} at index {}", number, idx_start);
 
       return number;
+    }
+
+    auto BinaryNumber() -> ParseResult<int64_t> {
+      spdlog::trace("BinaryNumber start at index {}", idx);
+
+      if (auto res = Expect('%'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      if (auto res = Expect('B'); !res.has_value()) {
+        return std::unexpected{res.error()};
+      }
+
+      auto start_idx = idx;
+      std::stringstream ss;
+      while (!Eof()) {
+        auto c = Current();
+        if (c == '0' || c == '1') {
+          ss << c;
+          Consume();
+        } else if (IsTokenChar(c)) {
+          return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting '0' or '1'.", c, idx)};
+        } else {
+          break;
+        }
+      }
+
+      const auto& str = ss.str();
+      spdlog::trace("bin str: {}", str);
+
+      int64_t result;
+      auto [pc, ec] = std::from_chars(str.data(), str.data() + str.size(), result, 2);
+      if (ec != std::errc()) {
+        auto offset = pc - str.data();
+        auto bin_idx = start_idx + offset;
+        auto c = *pc;
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting either '0' or '1'.", c, bin_idx)};
+      }
+
+      spdlog::trace("BinaryNumber found: {:b} end at index {}", result, idx);
+
+      return result;
     }
 
     auto IsAlphaNumeric(char c) -> bool {
@@ -386,7 +437,7 @@ namespace hdl::test::internal {
         return std::unexpected{format.error()};
       }
 
-      auto width = Number();
+      auto width = DecimalNumber();
       if (!width.has_value()) {
         return std::unexpected{width.error()};
       }
@@ -395,7 +446,7 @@ namespace hdl::test::internal {
         return std::unexpected{res.error()};
       }
 
-      auto left = Number();
+      auto left = DecimalNumber();
       if (!left.has_value()) {
         return std::unexpected{left.error()};
       }
@@ -404,7 +455,7 @@ namespace hdl::test::internal {
         return std::unexpected{res.error()};
       }
 
-      auto right = Number();
+      auto right = DecimalNumber();
       if (!right.has_value()) {
         return std::unexpected{right.error()};
       }
@@ -465,15 +516,12 @@ namespace hdl::test::internal {
       return columns;
     }
 
-    auto Value() -> ParseResult<std::string> {
-      std::stringstream ss;
-
-      while (!Eof() && (IsAlphaNumeric(Current()) || Current() == '%')) {
-        ss << Current();
-        Consume();
+    auto Value() -> ParseResult<int64_t> {
+      if (Current() == '%') {
+        return BinaryNumber();
       }
 
-      return ss.str();
+      return DecimalNumber(true);
     }
 
     auto LoadCommand() -> ParseResult<TestCommand> {
@@ -566,7 +614,7 @@ namespace hdl::test::internal {
 
     auto TockCommand() -> ParseResult<TestCommand> {
       return TestCommand{
-        .type = CommandType::Tick,
+        .type = CommandType::Tock,
       };
     }
 
