@@ -145,17 +145,31 @@ namespace hdl::test::internal {
         return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9..", c, idx)};
       }
 
-      int64_t number = c - '0';
+      auto start_idx = idx;
+
+      std::stringstream ss;
+      ss << c;
+
       Consume();
       c = Current();
       while (IsAlphaNumeric(c)) {
         if (isdigit(c)) {
-          number = (number * 10) + (c - '0');
+          ss << c;
         } else {
           return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9.", c, idx)};
         }
         Consume();
         c = Current();
+      }
+
+      const auto& str = ss.str();
+      int64_t number = 0;
+      auto [pc, ec] = std::from_chars(str.data(), str.data() + str.size(), number, 10);
+      if (ec != std::errc()) {
+        char c = *pc;
+        auto diff = str.data() - pc;
+        auto err_idx = start_idx + diff;
+        return std::unexpected{std::format("Unexpected character '{}' at index {}, expecting digits 0-9.", c, err_idx)};
       }
 
       spdlog::trace("Found number {} at index {}", number, idx_start);
