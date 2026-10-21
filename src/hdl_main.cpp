@@ -5,9 +5,9 @@
 #include <spdlog/spdlog.h>
 
 #include "args.hpp"
-#include "hdl/hdl_parser.hpp"
+#include "hdl/parser.hpp"
 #include "test/runner.hpp"
-#include "test/test_parser.hpp"
+#include "test/parser.hpp"
 #include "util/file.hpp"
 #include "util/string.hpp"
 

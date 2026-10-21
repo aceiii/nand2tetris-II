@@ -1,7 +1,8 @@
 #include <filesystem>
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include "hdl_parser.hpp"
+
+#include "parser.hpp"
 
 namespace fs = std::filesystem;
 

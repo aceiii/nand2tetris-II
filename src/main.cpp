@@ -3,7 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include "args.hpp"
-#include "hdl/hdl_parser.hpp"
+#include "hdl/parser.hpp"
 #include "util/string.hpp"
 
 

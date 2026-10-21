@@ -5,7 +5,7 @@
 #include <magic_enum/magic_enum.hpp>
 #include <spdlog/spdlog.h>
 
-#include "test_parser.hpp"
+#include "parser.hpp"
 #include "../util/string.hpp"
 
 namespace fs = std::filesystem;

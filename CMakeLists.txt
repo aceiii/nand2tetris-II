@@ -16,8 +16,8 @@ set(SOURCE_FILES
     src/args.hpp
     src/args.cpp
     src/main.cpp
-    src/hdl/hdl_parser.hpp
-    src/hdl/hdl_parser.cpp
+    src/hdl/parser.hpp
+    src/hdl/parser.cpp
     src/util/string.hpp
     src/util/string.cpp
 )
@@ -56,10 +56,10 @@ if (BUILD_HDL)
         src/args.hpp
         src/args.cpp
         src/hdl_main.cpp
-        src/hdl/hdl_parser.hpp
-        src/hdl/hdl_parser.cpp
-        src/test/test_parser.hpp
-        src/test/test_parser.cpp
+        src/hdl/parser.hpp
+        src/hdl/parser.cpp
+        src/test/parser.hpp
+        src/test/parser.cpp
         src/test/runner.hpp
         src/test/runner.cpp
         src/util/file.hpp
@@ -83,10 +83,10 @@ if (BUILD_HDL)
         add_executable(hdl-tests
             tests/hdl_parser_tests.cpp
             tests/test_parser_tests.cpp
-            src/hdl/hdl_parser.hpp
-            src/hdl/hdl_parser.cpp
-            src/test/test_parser.hpp
-            src/test/test_parser.cpp
+            src/hdl/parser.hpp
+            src/hdl/parser.cpp
+            src/test/parser.hpp
+            src/test/parser.cpp
             src/util/string.hpp
             src/util/string.cpp
         )

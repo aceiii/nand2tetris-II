@@ -3,7 +3,7 @@
 #include <print>
 #include <catch2/catch_test_macros.hpp>
 
-#include "../src/test/test_parser.hpp"
+#include "../src/test/parser.hpp"
 
 
 using namespace test;
