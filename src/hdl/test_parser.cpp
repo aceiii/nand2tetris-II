@@ -341,6 +341,7 @@ namespace hdl::test::internal {
         { "eval", CommandType::Eval },
         { "output", CommandType::Output },
         { "tick", CommandType::Tick },
+        { "tock", CommandType::Tock },
       });
 
       auto found = std::find_if(keywords.begin(), keywords.end(), [&](const auto& item) {
@@ -563,6 +564,12 @@ namespace hdl::test::internal {
       };
     }
 
+    auto TockCommand() -> ParseResult<TestCommand> {
+      return TestCommand{
+        .type = CommandType::Tick,
+      };
+    }
+
     auto Command() -> ParseResult<TestCommand> {
       spdlog::trace("Command start at indx {}", idx);
 
@@ -583,6 +590,7 @@ namespace hdl::test::internal {
         case CommandType::Eval: return EvalCommand();
         case CommandType::Output: return OutputCommand();
         case CommandType::Tick: return TickCommand();
+        case CommandType::Tock: return TockCommand();
         default: std::unreachable();
         }
       }();
