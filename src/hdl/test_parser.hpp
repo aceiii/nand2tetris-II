@@ -15,6 +15,7 @@ namespace hdl::test {
     Set,
     Eval,
     Output,
+    Tick,
   };
 
   enum class PatternFormat {
