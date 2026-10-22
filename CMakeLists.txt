@@ -16,6 +16,8 @@ set(SOURCE_FILES
     src/args.hpp
     src/args.cpp
     src/main.cpp
+    src/hdl/chip.hpp
+    src/hdl/chip.cpp
     src/hdl/parser.hpp
     src/hdl/parser.cpp
     src/util/string.hpp
@@ -56,6 +58,8 @@ if (BUILD_HDL)
         src/args.hpp
         src/args.cpp
         src/hdl_main.cpp
+        src/hdl/chip.hpp
+        src/hdl/chip.cpp
         src/hdl/parser.hpp
         src/hdl/parser.cpp
         src/test/parser.hpp
@@ -85,6 +89,8 @@ if (BUILD_HDL)
         add_executable(hdl-tests
             tests/hdl_parser_tests.cpp
             tests/test_parser_tests.cpp
+            src/hdl/chip.hpp
+            src/hdl/chip.cpp
             src/hdl/parser.hpp
             src/hdl/parser.cpp
             src/test/command.hpp

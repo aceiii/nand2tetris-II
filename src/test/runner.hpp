@@ -4,7 +4,7 @@
 
 #include "command.hpp"
 #include "parser.hpp"
-
+#include "../hdl/parser.hpp"
 
 namespace test
 {
@@ -25,6 +25,7 @@ namespace test
 
   private:
     TestCommands commands_;
+    hdl::Chip chip_;
     size_t index_ = 0;
   };
 
