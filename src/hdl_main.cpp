@@ -14,50 +14,6 @@
 namespace fs = std::filesystem;
 
 
-auto FormatPatternFormat(const test::PatternFormat& format) {
-  using namespace test;
-  switch (format) {
-    case PatternFormat::Binary: return 'B';
-    case PatternFormat::Hexadecimal: return 'X';
-    case PatternFormat::Decimal: return 'D';
-    case PatternFormat::String: return 'S';
-    default: std::unreachable();
-  }
-}
-
-auto FormatPattern(const test::Pattern& pattern) {
-  return std::format("%{}{}.{}.{}", FormatPatternFormat(pattern.format), pattern.width, pattern.left, pattern.right);
-}
-
-auto FormatColumn(const test::Column& column) {
-  if (!column.pattern.has_value()) {
-    return column.name;
-  }
-
-  return std::format("{}{}", column.name, FormatPattern(column.pattern.value()));
-}
-
-auto FormatCommand(const test::TestCommand& command) {
-  const auto name = magic_enum::enum_name(command.type);
-
-  switch (command.type) {
-  case test::CommandType::Load:
-  case test::CommandType::OutputFile:
-  case test::CommandType::CompareTo:
-    return std::format("{} {}", name, command.filename);
-  case test::CommandType::OutputList:
-    return std::format("{} {}", name, util::string::Join(command.columns, " ", FormatColumn));
-  case test::CommandType::Set:
-    return std::format("{} {} {}", name, command.ident, command.value);
-  case test::CommandType::Eval:
-  case test::CommandType::Output:
-  case test::CommandType::Tick:
-  case test::CommandType::Tock:
-    return std::string(name);
-  default: std::unreachable();
-  }
-}
-
 auto RunTestFile(fs::path path) {
   auto contents = util::file::Read(path);
   if (!contents.has_value()) {
@@ -71,10 +27,6 @@ auto RunTestFile(fs::path path) {
   if (!commands.has_value()) {
     spdlog::error("Parse error: {}", commands.error());
     return 1;
-  }
-
-  for (const auto &command : commands.value()) {
-    spdlog::info("Command: {}", FormatCommand(command));
   }
 
   test::TestRunner test_runner{std::move(commands.value())};

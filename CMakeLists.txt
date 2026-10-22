@@ -60,6 +60,8 @@ if (BUILD_HDL)
         src/hdl/parser.cpp
         src/test/parser.hpp
         src/test/parser.cpp
+        src/test/command.hpp
+        src/test/command.cpp
         src/test/runner.hpp
         src/test/runner.cpp
         src/util/file.hpp
@@ -85,6 +87,8 @@ if (BUILD_HDL)
             tests/test_parser_tests.cpp
             src/hdl/parser.hpp
             src/hdl/parser.cpp
+            src/test/command.hpp
+            src/test/command.cpp
             src/test/parser.hpp
             src/test/parser.cpp
             src/util/string.hpp

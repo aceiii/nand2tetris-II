@@ -1,8 +1,9 @@
 #pragma once
 
-#include "parser.hpp"
-
 #include <vector>
+
+#include "command.hpp"
+#include "parser.hpp"
 
 
 namespace test
@@ -10,7 +11,7 @@ namespace test
 
   using TestCommands = std::vector<TestCommand>;
 
-  class TestRunner {
+  class TestRunner final {
   public:
     TestRunner() = delete;
     TestRunner(TestCommands& command_list);
@@ -19,8 +20,12 @@ namespace test
     int Run();
 
   private:
+    int RunCommands();
+    int RunNextCommand();
+
+  private:
     TestCommands commands_;
-    size_t index_;
+    size_t index_ = 0;
   };
 
 }
