@@ -29,8 +29,15 @@ auto RunTestFile(fs::path path) {
     return 1;
   }
 
-  test::TestRunner test_runner{std::move(commands.value())};
-  return test_runner.Run();
+  auto test_dir = std::filesystem::absolute(path).parent_path();
+
+  test::TestRunnerConfig config {
+    .path = test_dir,
+  };
+
+  test::TestRunner test_runner{std::move(config)};
+
+  return test_runner.Run(commands.value());
 }
 
 auto RunHdlFile(fs::path path) {

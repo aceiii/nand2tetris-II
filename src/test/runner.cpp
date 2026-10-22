@@ -4,42 +4,39 @@
 #include "runner.hpp"
 #include "../util/file.hpp"
 
+namespace fs = std::filesystem;
 
-test::TestRunner::TestRunner(TestCommands &command_list) : commands_{command_list} {
+
+test::TestRunner::TestRunner(TestRunnerConfig& config) : config_{config} {
 }
 
-test::TestRunner::TestRunner(TestCommands &&command_list) : commands_{std::move(command_list)} {
+test::TestRunner::TestRunner(TestRunnerConfig&& config) : config_{std::move(config)} {
 }
 
-int test::TestRunner::Run() {
-  int result = RunCommands();
-  if (result) {
-    return result;
+int test::TestRunner::Run(const TestCommands& commands) {
+  int res = 0;
+  for (const auto& command : commands) {
+    res = RunCommand(command);
+    if (res) {
+      break;
+    }
   }
 
-  return 0;
-}
-
-int test::TestRunner::RunCommands() {
-  int res = 0;
-  do {
-    res = RunNextCommand();
-  } while (res == 0 && index_ < commands_.size());
   return res;
 }
 
-int test::TestRunner::RunNextCommand() {
-  if (index_ >= commands_.size()) {
-    spdlog::error("Tests already terminated.");
-    return 1;
-  }
-
-  const auto& command = commands_.at(index_);
+int test::TestRunner::RunCommand(const TestCommand& command) {
   spdlog::info("[TestRunner] Running command: {}", FormatCommand(command));
 
   switch (command.type) {
   case CommandType::Load: {
-    auto contents = util::file::Read(command.filename);
+    fs::path filepath{command.filename};
+
+    if (filepath.is_relative()) {
+      filepath = config_.path / filepath;
+    }
+
+    auto contents = util::file::Read(filepath.string());
     if (!contents.has_value()) {
       spdlog::error("File error: {}", contents.error());
       return 1;
@@ -71,8 +68,6 @@ int test::TestRunner::RunNextCommand() {
     spdlog::error("Unimplemented command type: {}", magic_enum::enum_name(command.type));
     std::unreachable();
   }
-
-  index_ += 1;
 
   return 0;
 }

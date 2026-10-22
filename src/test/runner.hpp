@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <vector>
 
 #include "command.hpp"
@@ -8,25 +9,24 @@
 
 namespace test
 {
-
   using TestCommands = std::vector<TestCommand>;
+
+  struct TestRunnerConfig {
+    std::filesystem::path path;
+  };
 
   class TestRunner final {
   public:
     TestRunner() = delete;
-    TestRunner(TestCommands& command_list);
-    TestRunner(TestCommands&& command_list);
+    TestRunner(TestRunnerConfig& config);
+    TestRunner(TestRunnerConfig&& config);
 
-    int Run();
-
-  private:
-    int RunCommands();
-    int RunNextCommand();
+    int Run(const TestCommands& command_list);
+    int RunCommand(const TestCommand& command);
 
   private:
-    TestCommands commands_;
+    TestRunnerConfig config_;
     hdl::Chip chip_;
-    size_t index_ = 0;
   };
 
 }
